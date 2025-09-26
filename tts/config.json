@@ -1,0 +1,7 @@
+{
+    "tts_server_port": 5033,
+    "tts_server_use_gpu": true,
+    "current_tts_server": "edgeTTS",
+    "tts_server_pid": 1204501,
+    "tts_timbre": "Default"
+}

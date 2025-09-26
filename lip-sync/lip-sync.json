@@ -1,0 +1,25 @@
+{
+  "paths": {
+    "conda_init": "/home/xinghua/workspace/share/conda/etc/profile.d/conda.sh",
+    "conda_env": "/workspace/conda_envs/nerfstream",
+    "muse_conda_env": "/workspace/share/yuntao/MuseTalk/home/chengxin/workspace/chengxin/conda/envs/MuseTalk",
+    "ffmpeg_path": "/usr/bin/ffmpeg",
+    "working_directory": "/workspace/share/yuntao/LiveTalking",
+    "muse_talk_base": "/workspace/share/yuntao/MuseTalk"
+  },
+  "servers": {
+    "tts_server": "http://127.0.0.1:8204",
+    "listenport": 8205,
+    "jina_port": 23002
+  },
+  "app_config": {
+    "max_session": 8
+  },
+  "default_texts": {
+    "ref_text": "hello this is tutorNet speaking, what do you need? do you want a cup of coffee?"
+  },
+  "video_processing": {
+    "bitrate": "3000k",
+    "codec": "libx264"
+  }
+}
