@@ -1,4 +1,19 @@
-# Intelligent Digital Human Mentor System
+
+# Repo Rules
+
+This repo is copied from the last Capstone team’s work.  
+You are free to **edit, extend, or refactor** the code in any way as needed.
+
+## Guidelines
+
+- **Keep code clean**: follow a consistent style, add comments for tricky parts.  
+- **Commit clearly**: write short but descriptive commit messages.  
+- **Don’t break things**: test your changes before pushing.  
+- **Update docs**: if you change setup steps or major features, update the README.  
+- **Work together**: use branches if needed, but PRs are optional. Just keep changes visible to the team.
+
+---
+# Virtual Tutor System
 
 This project is an intelligent digital human mentor system that combines digital human technology, speech synthesis, speech recognition, large language models, and knowledge retrieval functionalities. By integrating multiple advanced technological components, the system achieves real-time conversation, question answering, and learning guidance capabilities.
 
