@@ -25,6 +25,23 @@ def create_app():
     # Init extensions
     CORS(app)          # Enable CORS for all routes
     db.init_app(app)   # Bind SQLAlchemy to app
+
+        # ✅ 自动创建数据库（instance/app.db）
+    with app.app_context():
+        db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+        if db_uri.startswith("sqlite:///"):
+            # 提取数据库文件路径
+            db_file = db_uri.replace("sqlite:///", "")
+            db_dir = os.path.dirname(db_file) or "."
+
+            # 确保数据库目录存在（例如 instance/）
+            os.makedirs(db_dir, exist_ok=True)
+
+            # 如果数据库文件不存在，则创建
+            if not os.path.exists(db_file):
+                print(f"⚙️  Creating new database at {db_file} ...")
+                db.create_all()
+
     JWTManager(app)    # Setup JWT
     mail.init_app(app) # Setup Flask-Mail
 

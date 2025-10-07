@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance
 const request = axios.create({
-    baseURL: process.env.REACT_APP_API_BASE_URL || 'http://160.250.71.211:37645/api', // Backend API base URL
+    baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8203/api', // Backend API base URL
     timeout: 300000, // 5-minute default timeout, suitable for long-running Avatar operations
     headers: {
         'Content-Type': 'application/json',
