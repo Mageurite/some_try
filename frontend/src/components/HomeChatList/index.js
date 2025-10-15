@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import adminService from '../../services/adminService';
 
+// 直接使用动态URL，不依赖config文件
+const getWebRTCUrl = () => {
+    const hostname = window.location.hostname;
+    return `http://${hostname}:8615`;
+};
+
+const getBackendUrl = () => {
+    const hostname = window.location.hostname;
+    return `http://${hostname}:8203`;
+};
+
 // 默认AI模型选项（作为备用）
 const defaultAiModels = [
     { id: 'tutor-model-1', name: 'Tutor Model 1', description: 'Basic teaching model, suitable for beginners' },
@@ -19,67 +30,84 @@ function VideoAvatar({ style }) {
     // 啟動 WebRTC 連接
     const startConnection = async () => {
         setLoading(true);
-        let pc;
-        let stopped = false;
-        const config = {
-            sdpSemantics: 'unified-plan',
-            iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }]
-        };
-        pc = new window.RTCPeerConnection(config);
-        pcRef.current = pc;
+        try {
+            let pc;
+            let stopped = false;
+            const config = {
+                sdpSemantics: 'unified-plan',
+                iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }]
+            };
+            pc = new window.RTCPeerConnection(config);
+            pcRef.current = pc;
 
-        pc.addTransceiver('video', { direction: 'recvonly' });
-        pc.addTransceiver('audio', { direction: 'recvonly' });
+            pc.addTransceiver('video', { direction: 'recvonly' });
+            pc.addTransceiver('audio', { direction: 'recvonly' });
 
-        pc.addEventListener('track', (evt) => {
-            if (evt.track.kind === 'video' && videoRef.current) {
-                videoRef.current.srcObject = evt.streams[0];
-            } else if (evt.track.kind === 'audio') {
-                const audio = new Audio();
-                audio.srcObject = evt.streams[0];
-                audio.autoplay = true;
-            }
-        });
-
-        await pc.setLocalDescription(await pc.createOffer());
-        await new Promise((resolve) => {
-            if (pc.iceGatheringState === 'complete') {
-                resolve();
-            } else {
-                const checkState = () => {
-                    if (pc.iceGatheringState === 'complete') {
-                        pc.removeEventListener('icegatheringstatechange', checkState);
-                        resolve();
-                    }
-                };
-                pc.addEventListener('icegatheringstatechange', checkState);
-            }
-        });
-
-        const offer = pc.localDescription;
-        const response = await fetch('http://160.250.71.211:37647/offer', {
-            body: JSON.stringify({ sdp: offer.sdp, type: offer.type }),
-            headers: { 'Content-Type': 'application/json' },
-            method: 'POST'
-        });
-        const answer = await response.json();
-        if (answer.sessionid) {
-            const token = localStorage.getItem('token'); // 取得 token
-            await fetch('http://160.250.71.211:37645/api/sessionid', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'sessionid': answer.sessionid,
-                    'Authorization': `Bearer ${token}` // 加入 token
-                },
-                body: JSON.stringify({ sessionid: answer.sessionid })
+            pc.addEventListener('track', (evt) => {
+                if (evt.track.kind === 'video' && videoRef.current) {
+                    videoRef.current.srcObject = evt.streams[0];
+                } else if (evt.track.kind === 'audio') {
+                    const audio = new Audio();
+                    audio.srcObject = evt.streams[0];
+                    audio.autoplay = true;
+                }
             });
+
+            await pc.setLocalDescription(await pc.createOffer());
+            await new Promise((resolve) => {
+                if (pc.iceGatheringState === 'complete') {
+                    resolve();
+                } else {
+                    const checkState = () => {
+                        if (pc.iceGatheringState === 'complete') {
+                            pc.removeEventListener('icegatheringstatechange', checkState);
+                            resolve();
+                        }
+                    };
+                    pc.addEventListener('icegatheringstatechange', checkState);
+                }
+            });
+
+            const offer = pc.localDescription;
+            const webrtcUrl = getWebRTCUrl();
+            const response = await fetch(`${webrtcUrl}/offer`, {
+                body: JSON.stringify({ sdp: offer.sdp, type: offer.type }),
+                headers: { 'Content-Type': 'application/json' },
+                method: 'POST'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            }
+            
+            const answer = await response.json();
+            if (answer.sessionid) {
+                const token = localStorage.getItem('token'); // 取得 token
+                const backendUrl = getBackendUrl();
+                await fetch(`${backendUrl}/api/sessionid`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'sessionid': answer.sessionid,
+                        'Authorization': `Bearer ${token}` // 加入 token
+                    },
+                    body: JSON.stringify({ sessionid: answer.sessionid })
+                });
+            }
+            if (!stopped) {
+                await pc.setRemoteDescription(answer);
+                setConnected(true);
+            }
+        } catch (error) {
+            console.error('WebRTC connection failed:', error);
+            alert(`视频连接失败: ${error.message}\n\n请先选择一个Avatar并等待切换完成后再尝试连接视频。`);
+            if (pcRef.current) {
+                pcRef.current.close();
+                pcRef.current = null;
+            }
+        } finally {
+            setLoading(false);
         }
-        if (!stopped) {
-            await pc.setRemoteDescription(answer);
-            setConnected(true);
-        }
-        setLoading(false);
     };
 
     // 關閉 WebRTC 連接

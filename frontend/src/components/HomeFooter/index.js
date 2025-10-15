@@ -218,7 +218,7 @@ function HomeFooter({ onSendMessage, onSendFile, onNewChat, themeStyles }) {
 
             console.log('🔑 使用的 Token:', token.substring(0, 50) + '...');
 
-            const response = await fetch('http://160.250.71.211:37645/api/upload', {
+            const response = await fetch('http://localhost:8203/api/upload', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

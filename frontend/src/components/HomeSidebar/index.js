@@ -3,7 +3,7 @@ import userService from '../../services/userService';
 import chatService from '../../services/chatService';
 import authService from '../../services/authService';
 
-const BASE_URL = 'http://160.250.71.211:37645/';
+const BASE_URL = 'http://localhost:8203/';
 
 // Mock SVG/emoji icons
 const BookIcon = () => <span role="img" aria-label="book" style={{ fontSize: 24 }}>📖</span>;

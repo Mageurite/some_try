@@ -20,8 +20,8 @@ from docarray import BaseDoc, DocList
 
 # ---------- 全局配置 ----------
 WORKSPACE = "./"   # 所有输入/输出文件所在根目录
-MODEL_PATH = "./human_segmentation_pphumanseg_2023mar.onnx" # Download here: https://github.com/opencv/opencv_zoo/tree/main/models/human_segmentation_pphumanseg
-PORT = 23002
+MODEL_PATH = "/workspace/murphy/capstone-project-25t3-9900-virtual-tutor-phase-2/lip-sync/blur/human_segmentation_pphumanseg_2023mar.onnx" # Download here: https://github.com/opencv/opencv_zoo/tree/main/models/human_segmentation_pphumanseg
+PORT = 23004
 
 
 # ---------- Doc 定义 ----------

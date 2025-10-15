@@ -296,7 +296,7 @@ function CreateEditModal({ open, onClose, onSave, columns, initialData, isEdit, 
                 throw new Error('No authentication token found');
             }
 
-            const response = await fetch('http://160.250.71.211:37645/api/upload', {
+            const response = await fetch('http://localhost:8203/api/upload', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -1044,7 +1044,7 @@ function CreateEditModal({ open, onClose, onSave, columns, initialData, isEdit, 
     );
 }
 
-const BASE_URL = 'http://160.250.71.211:37645/';
+const BASE_URL = 'http://localhost:8203/';
 const DEFAULT_AVATAR = 'https://cdn.jsdelivr.net/gh/edent/SuperTinyIcons/images/svg/user.svg';
 
 function UserTable({ themeStyles, selectedMenu, onLogout }) {

@@ -10,7 +10,7 @@ const CloseIcon = () => <span role="img" aria-label="close" style={{ fontSize: 2
 const UserIcon = () => <span role="img" aria-label="user" style={{ fontSize: 28, color: '#44C408' }}>🧑</span>;
 const SunIcon = () => <span role="img" aria-label="sun" style={{ fontSize: 20, color: '#FFD700' }}>☀️</span>;
 const MoonIcon = () => <span role="img" aria-label="moon" style={{ fontSize: 20, color: '#4A90E2' }}>🌙</span>;
-const BASE_URL = 'http://160.250.71.211:37645/';
+const BASE_URL = 'http://localhost:8203/';
 
 const menuItems = [
     { key: 'avatar', label: 'Avatar', icon: <SmartToy style={{ fontSize: 20 }} /> },

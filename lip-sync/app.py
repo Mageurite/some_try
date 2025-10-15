@@ -81,7 +81,7 @@ def build_nerfreal(sessionid:int)->BaseReal:
         nerfreal = LightReal(opt,model,avatar)
     return nerfreal
 
-#@app.route('/offer', methods=['POST'])
+@app.route('/offer', methods=['POST'])
 async def offer(request):
     params = await request.json()
     offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])

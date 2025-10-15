@@ -15,8 +15,24 @@ def fetch_avatars():
     user = User.query.filter_by(email=current_user_email).first()
 
     try:
-        response = requests.get("http://localhost:8204/avatar/get_avatars", timeout=10)
-        return jsonify(response.json()), response.status_code
+        response = requests.get("http://localhost:8606/avatar/get_avatars", timeout=10)
+        data = response.json()
+        # 前端期望对象格式：{avatar_name: {clone: bool, description: str, ...}}
+        if data.get('status') == 'success' and 'avatars' in data:
+            avatar_list = data['avatars']
+            # 转换为对象格式
+            avatar_dict = {}
+            for avatar_name in avatar_list:
+                avatar_dict[avatar_name] = {
+                    "clone": False,
+                    "description": f"Avatar: {avatar_name}",
+                    "status": "active",
+                    "timbre": "",
+                    "tts_model": "",
+                    "avatar_model": ""
+                }
+            return jsonify(avatar_dict), 200
+        return jsonify(data), response.status_code
     except requests.RequestException as e:
         return jsonify(msg="Failed to connect to avatar service", error=str(e)), 500
 
@@ -34,7 +50,7 @@ def forward_avatar_preview():
 
     try:
         response = requests.post(
-            "http://localhost:8204/avatar/preview",
+            "http://localhost:8606/avatar/preview",
             data={"avatar_name": avatar_name},
             timeout=10
         )
@@ -81,7 +97,7 @@ def add_avatar():
 
     try:
         response = requests.post(
-            "http://localhost:8204/avatar/add",
+            "http://localhost:8606/avatar/add",
             data=data,
             files=files,
             timeout=200
@@ -107,7 +123,7 @@ def get_tts_models():
     """Fetch available TTS models from the avatar service."""
     current_user_email = get_jwt_identity()
     try:
-        response = requests.get("http://localhost:8204/tts/models", timeout=10)
+        response = requests.get("http://localhost:8604/tts/models", timeout=10)
 
         if response.status_code == 200:
             return jsonify(response.json()), 200
@@ -130,7 +146,7 @@ def forward_delete_avatar():
 
     try:
         response = requests.post(
-            "http://localhost:8204/avatar/delete",
+            "http://localhost:8606/avatar/delete",
             data={"name": avatar_name},
             timeout=10
         )
@@ -161,7 +177,7 @@ def forward_start_avatar():
 
     try:
         response = requests.post(
-            "http://localhost:8204/avatar/start",
+            "http://localhost:8606/avatar/start",
             data={"avatar_name": avatar_name},
             timeout=60
         )

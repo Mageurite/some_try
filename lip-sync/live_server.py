@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException, File, UploadFile
+from fastapi import FastAPI, Query, HTTPException, File, UploadFile, Form
 from fastapi.responses import Response
 import subprocess
 import os
@@ -62,7 +62,7 @@ def switch_avatar(
     max_session = get_config_value("app_config.max_session", 8)
     listenport = get_config_value("servers.listenport", 8205)
     tts = "cosyvoice"
-    tts_server = get_config_value("servers.tts_server", "http://127.0.0.1:8204")
+    tts_server = get_config_value("servers.tts_server", "http://127.0.0.1:8604")
     ref_text = get_config_value("default_texts.ref_text", "hello this is tutorNet speaking, what do you need? do you want a cup of coffee?")
 
     # Check if avatar_id exists
@@ -389,6 +389,117 @@ def delete_avatar(
             "message": f"Error occurred during avatar deletion: {str(e)}"
         }
 
+@app.get("/avatar/get_avatars")
+def get_avatars():
+    """List all existing avatars from working directory"""
+    working_directory = get_config_value("paths.working_directory", "/workspace/share/yuntao/LiveTalking")
+    base = os.path.join(working_directory, "data", "avatars")
+
+    if not os.path.isdir(base):
+        return {"status": "success", "avatars": []}
+
+    avatars = [
+        name for name in os.listdir(base)
+        if os.path.isdir(os.path.join(base, name))
+    ]
+    return {"status": "success", "avatars": avatars}
+
+@app.post("/avatar/preview")
+def avatar_preview(avatar_name: str = Form(...)):
+    """Avatar preview endpoint - returns avatar preview image"""
+    from fastapi.responses import FileResponse
+    
+    working_directory = get_config_value("paths.working_directory", "/workspace/share/yuntao/LiveTalking")
+    avatar_path = os.path.join(working_directory, "data", "avatars", avatar_name)
+    
+    # 查找预览图片
+    img_path = os.path.join(avatar_path, "full_imgs", "00000000.png")
+    
+    if os.path.exists(img_path):
+        return FileResponse(img_path, media_type="image/png")
+    else:
+        raise HTTPException(status_code=404, detail=f"Avatar preview image not found for {avatar_name}")
+
+@app.post("/avatar/add")
+async def avatar_add(
+    name: str = Form(...),
+    prompt_face: UploadFile = File(...),
+    prompt_voice: UploadFile = File(None),
+    avatar_blur: str = Form("false"),
+    support_clone: str = Form("false"),
+    timbre: str = Form(""),
+    tts_model: str = Form(""),
+    avatar_model: str = Form(""),
+    description: str = Form("")
+):
+    """Avatar creation endpoint - handles file upload"""
+    import tempfile
+    
+    try:
+        # 临时保存视频文件
+        video_suffix = os.path.splitext(prompt_face.filename)[1] or ".mp4"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=video_suffix) as tmp_vid:
+            video_content = await prompt_face.read()
+            if len(video_content) == 0:
+                raise HTTPException(status_code=400, detail="Empty video file uploaded")
+            tmp_vid.write(video_content)
+            video_path = tmp_vid.name
+        
+        # 检查文件大小
+        file_size = os.path.getsize(video_path)
+        print(f"Received video file: {prompt_face.filename}, size: {file_size} bytes, saved to {video_path}")
+        
+        if file_size == 0:
+            raise HTTPException(status_code=400, detail="Empty video file")
+
+        # 校验格式
+        if not video_path.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
+            raise HTTPException(status_code=400, detail="Unsupported video format.")
+
+        # 调用 create_avatar 函数
+        print(f"Starting avatar creation for: {name}")
+        burr = (avatar_blur.lower() == "true")
+        result = create_avatar(video_path, name, burr=burr)
+
+        if result:
+            print(f"Avatar created successfully: {result}")
+            return {"status": "success", "message": "Avatar created", "image_path": result}
+        else:
+            print(f"Avatar creation failed for: {name}")
+            raise HTTPException(status_code=500, detail="Failed to create avatar - check video file format and content")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # 清理临时文件
+        try:
+            if 'video_path' in locals() and os.path.exists(video_path):
+                os.remove(video_path)
+        except Exception as cleanup_err:
+            print(f"[WARN] cleanup failed: {cleanup_err}")
+
+@app.post("/avatar/delete")
+def avatar_delete(name: str = Form(...)):
+    """Avatar deletion endpoint - alias for delete_avatar"""
+    return delete_avatar(avatar_name=name)
+
+@app.post("/avatar/start")
+def avatar_start(avatar_name: str = Form(...), ref_file: str = Form("ref_audio/silence.wav")):
+    """Avatar start endpoint - alias for switch_avatar"""
+    return switch_avatar(avatar_id=avatar_name, ref_file=ref_file)
+
+@app.get("/tts/models")
+def get_tts_models():
+    """Get available TTS models"""
+    return {
+        "cosyvoice": {"full_name": "CosyVoice2", "clone": True, "status": "active", "license": "MIT"},
+        "edgeTTS": {"full_name": "edgeTTS", "clone": False, "status": "active", "license": "MIT"},
+        "tacotron": {"full_name": "TacoTron2", "clone": False, "status": "active", "license": "MIT"},
+        "sovits": {"full_name": "GPT-SoViTs", "clone": True, "status": "active", "license": "MIT"}
+    }
+
 @app.on_event("startup")
 async def startup_event():
     """Load configuration when application starts"""
@@ -398,4 +509,4 @@ async def startup_event():
 if __name__ == "__main__":
     # Load configuration before startup
     load_config()
-    uvicorn.run(app, host="0.0.0.0", port=20000)
+    uvicorn.run(app, host="0.0.0.0", port=8606)

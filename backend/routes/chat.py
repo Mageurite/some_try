@@ -81,7 +81,7 @@ def chat():
         # Stream LLM response
         try:
             with requests.post(
-                url="http://localhost:8100/chat/stream",
+                url="http://localhost:8610/chat/stream",
                 json={"input": text, "session_id": session.id, "user_id": user.id},
                 stream=True,
                 timeout=60,
@@ -105,7 +105,7 @@ def chat():
                                     "type": "echo",
                                 }
                                 try:
-                                    requests.post("http://localhost:8205/human", json=forward_payload, timeout=10)
+                                    requests.post("http://localhost:8615/human", json=forward_payload, timeout=10)
                                 except Exception as e:
                                     print(f"[WARN] Final forward failed: {e}")
                                 output_segments.append(buffer)
@@ -119,7 +119,7 @@ def chat():
                                 "type": "echo",
                             }
                             try:
-                                requests.post("http://localhost:8205/human", json=forward_payload, timeout=10)
+                                requests.post("http://localhost:8615/human", json=forward_payload, timeout=10)
                             except Exception as e:
                                 print(f"[WARN] Forward to video model failed: {e}")
                             output_segments.append(buffer)
@@ -284,7 +284,7 @@ def forward_activate_model():
 
     try:
         response = requests.post(
-            "http://localhost:8100/activate_model",
+            "http://localhost:8610/activate_model",
             json=data,
             timeout=15
         )

@@ -67,6 +67,50 @@ def health():
     return {"status": "running"}
 
 
+# Streaming endpoint for lip-sync (supports GET with form data for compatibility)
+@app.get("/inference_zero_shot")
+async def tts_inference_streaming(
+        tts_text: str = Form(...),
+        prompt_text: str = Form(""),
+        prompt_wav: UploadFile = File(...)
+):
+    """Streaming TTS endpoint compatible with lip-sync module"""
+    from fastapi.responses import StreamingResponse
+    
+    async def audio_stream():
+        try:
+            start_time = time.time()
+            # Edge TTS always uses default voice (ignore prompt_text from lip-sync)
+            voice = "en-US-GuyNeural"
+            print(f">>> [Stream] Generating TTS for: [{tts_text}] with voice: {voice}")
+            
+            # Generate complete audio first
+            audio_bytes = await generate_edge_tts(tts_text, voice)
+            
+            # Convert to WAV
+            audio = AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3")
+            wav_buf = io.BytesIO()
+            audio.export(wav_buf, format="wav")
+            wav_data = wav_buf.getvalue()
+            
+            # Stream in chunks (9600 bytes = 960 samples * 2 bytes * 5 chunks for 24kHz)
+            chunk_size = 9600
+            for i in range(0, len(wav_data), chunk_size):
+                yield wav_data[i:i+chunk_size]
+                await asyncio.sleep(0.001)  # Small delay for streaming
+            
+            end_time = time.time()
+            duration = len(audio) / 1000
+            rtf = (end_time - start_time) / duration
+            print(f">>> [Stream] RTF: {rtf:.4f}")
+            
+        except Exception as e:
+            print(f">>> [Stream] Error: {e}")
+            raise
+    
+    return StreamingResponse(audio_stream(), media_type="application/octet-stream")
+
+
 if __name__ == '__main__':
     import argparse
 

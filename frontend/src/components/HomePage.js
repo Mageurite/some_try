@@ -160,7 +160,7 @@ function HomePage(props) {
                 type: fileData.fileInfo.type,
                 // 根据实际后端响应构建下载URL
                 url: fileData.file.file_path ?
-                    `http://160.250.71.211:37645/api/download/${fileData.file.file_id}` :
+                    `http://localhost:8203/api/download/${fileData.file.file_id}` :
                     '#', // 临时占位符
                 file_id: fileData.file.file_id,
                 file_path: fileData.file.file_path,

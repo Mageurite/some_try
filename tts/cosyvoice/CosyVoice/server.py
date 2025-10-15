@@ -119,6 +119,16 @@ def health():
     return {"status": "running"}
 
 
+# Alias for /generate to support /inference_zero_shot endpoint
+@app.get("/inference_zero_shot")
+async def tts_zero_shot_get(
+        tts_text: str = Form(...),
+        prompt_text: str = Form(...),
+        prompt_wav: UploadFile = File(...)
+):
+    return await tts_zero_shot(tts_text, prompt_text, prompt_wav)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_name', required=True)

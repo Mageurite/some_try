@@ -424,7 +424,7 @@ def switch_avatar(
     max_session = 8
     listenport = 8205
     tts = "cosyvoice"
-    tts_server = "http://127.0.0.1:8204"
+    tts_server = "http://127.0.0.1:8604"
     ref_text = "This is a test demo. This is a test demo."
 
     avatar_id = avatar_id.strip() if avatar_id else "avator_1"
