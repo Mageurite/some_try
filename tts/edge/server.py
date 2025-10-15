@@ -67,8 +67,8 @@ def health():
     return {"status": "running"}
 
 
-# Streaming endpoint for lip-sync (supports GET with form data for compatibility)
-@app.get("/inference_zero_shot")
+# Streaming endpoint for lip-sync
+@app.post("/inference_zero_shot")
 async def tts_inference_streaming(
         tts_text: str = Form(...),
         prompt_text: str = Form(""),
