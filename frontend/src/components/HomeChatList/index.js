@@ -214,9 +214,20 @@ function HomeChatList({ themeStyles }) {
 
                 setAvailableAvatars(avatarList);
 
-                // 设置默认选中的模型
+                // 设置默认选中的模型并自动启动
                 if (avatarList.length > 0 && !selectedModel) {
-                    setSelectedModel(avatarList[0].id);
+                    const defaultAvatarId = avatarList[0].id;
+                    setSelectedModel(defaultAvatarId);
+                    // 自动启动默认avatar
+                    adminService.startAvatar(defaultAvatarId).then(result => {
+                        if (result.success) {
+                            console.log(`Auto-started default avatar: ${defaultAvatarId}`);
+                        } else {
+                            console.warn(`Failed to auto-start avatar: ${result.message}`);
+                        }
+                    }).catch(error => {
+                        console.error(`Error auto-starting avatar:`, error);
+                    });
                 }
             } else {
                 console.warn('Failed to fetch available avatars:', result.message);

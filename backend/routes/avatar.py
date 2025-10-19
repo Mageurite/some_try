@@ -7,6 +7,29 @@ from models.user import User
 avatar_bp = Blueprint("avatar", __name__)
 
 
+@avatar_bp.route("/webrtc/<path:path>", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+def webrtc_proxy(path):
+    """Proxy WebRTC requests to port 8615 (bypass port mapping issue)"""
+    webrtc_url = f"http://localhost:8615/{path}"
+    
+    try:
+        # Prepare headers
+        headers = {k: v for k, v in request.headers if k.lower() not in ['host', 'content-length']}
+        
+        # Forward request
+        if request.method == "POST":
+            resp = requests.post(webrtc_url, headers=headers, data=request.get_data(), timeout=30)
+        elif request.method == "GET":
+            resp = requests.get(webrtc_url, headers=headers, params=request.args, timeout=30)
+        else:
+            resp = requests.request(request.method, webrtc_url, headers=headers, data=request.get_data(), timeout=30)
+        
+        # Return response
+        return Response(resp.content, status=resp.status_code, headers=dict(resp.headers))
+    except Exception as e:
+        return jsonify(msg=f"Proxy error: {str(e)}"), 502
+
+
 @avatar_bp.route("/avatar/list", methods=["GET"])
 @jwt_required()
 def fetch_avatars():
