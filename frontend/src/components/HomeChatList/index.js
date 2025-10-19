@@ -21,7 +21,7 @@ const defaultAiModels = [
 ];
 
 // WebRTC Video Avatar Component (Square, with connection button in bottom right)
-function VideoAvatar({ style }) {
+const VideoAvatar = React.forwardRef(({ style, switchingAvatar }, ref) => {
     const videoRef = useRef(null);
     const pcRef = useRef(null);
     const [connected, setConnected] = useState(false);
@@ -43,13 +43,21 @@ function VideoAvatar({ style }) {
             pc.addTransceiver('video', { direction: 'recvonly' });
             pc.addTransceiver('audio', { direction: 'recvonly' });
 
+            // 收集所有接收到的 stream
+            const streams = new Set();
             pc.addEventListener('track', (evt) => {
-                if (evt.track.kind === 'video' && videoRef.current) {
-                    videoRef.current.srcObject = evt.streams[0];
-                } else if (evt.track.kind === 'audio') {
-                    const audio = new Audio();
-                    audio.srcObject = evt.streams[0];
-                    audio.autoplay = true;
+                console.log(`收到 ${evt.track.kind} track`);
+                
+                // 将 stream 添加到集合中
+                evt.streams.forEach(stream => streams.add(stream));
+                
+                // 当收到第一个 track 时，将 stream 设置给 video 元素
+                // video 元素会自动处理其中的视频和音频
+                if (videoRef.current && streams.size > 0) {
+                    const stream = Array.from(streams)[0];
+                    videoRef.current.srcObject = stream;
+                    console.log('Stream 已设置到 video 元素，包含轨道:', 
+                        stream.getTracks().map(t => t.kind).join(', '));
                 }
             });
 
@@ -122,6 +130,13 @@ function VideoAvatar({ style }) {
         setConnected(false);
     };
 
+    // 将stopConnection方法暴露给父组件
+    React.useImperativeHandle(ref, () => ({
+        stopConnection,
+        startConnection,
+        isConnected: () => connected
+    }));
+
     // 卸載時自動關閉
     useEffect(() => {
         return () => {
@@ -147,13 +162,47 @@ function VideoAvatar({ style }) {
                 ref={videoRef}
                 autoPlay
                 playsInline
-                muted
                 style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 0 }}
             />
+            
+            {/* Avatar切换中的遮罩层 */}
+            {switchingAvatar && (
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: 500,
+                    zIndex: 20
+                }}>
+                    <div style={{
+                        width: 40,
+                        height: 40,
+                        border: '3px solid #ffffff33',
+                        borderTop: '3px solid #fff',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                        marginBottom: 16
+                    }}></div>
+                    <div>正在切换Avatar...</div>
+                    <div style={{ fontSize: 12, color: '#ffffffaa', marginTop: 8 }}>
+                        请稍候，将自动重新连接
+                    </div>
+                </div>
+            )}
+            
             {/* 右下角連接/斷開按鈕 */}
             <button
                 onClick={connected ? stopConnection : startConnection}
-                disabled={loading}
+                disabled={loading || switchingAvatar}
                 style={{
                     position: 'absolute',
                     right: 10,
@@ -163,7 +212,7 @@ function VideoAvatar({ style }) {
                     borderRadius: '50%',
                     background: connected ? 'linear-gradient(135deg, #FF7E5F 0%, #FFB86C 100%)' : 'linear-gradient(135deg, #4ADE80 0%, #6EE7B7 100%)',
                     border: 'none',
-                    cursor: loading ? 'not-allowed' : 'pointer',
+                    cursor: (loading || switchingAvatar) ? 'not-allowed' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -172,7 +221,8 @@ function VideoAvatar({ style }) {
                     fontSize: 20,
                     fontWeight: 700,
                     transition: 'all 0.2s',
-                    opacity: loading ? 0.6 : 1
+                    opacity: (loading || switchingAvatar) ? 0.6 : 1,
+                    zIndex: 30
                 }}
                 title={connected ? 'Disconnect Video' : 'Connect Video'}
             >
@@ -180,13 +230,14 @@ function VideoAvatar({ style }) {
             </button>
         </div>
     );
-}
+});
 
 function HomeChatList({ themeStyles }) {
     const [selectedModel, setSelectedModel] = useState('');
     const [availableAvatars, setAvailableAvatars] = useState([]);
     const [loadingAvatars, setLoadingAvatars] = useState(false);
     const [switchingModel, setSwitchingModel] = useState(false);
+    const videoAvatarRef = useRef(null);
 
     // 获取可用Avatar列表
     const fetchAvailableAvatars = async () => {
@@ -253,19 +304,41 @@ function HomeChatList({ themeStyles }) {
     const handleModelSwitch = async (modelId) => {
         if (modelId === selectedModel) return;
 
+        // 记录是否之前已连接
+        const wasConnected = videoAvatarRef.current && videoAvatarRef.current.isConnected();
+
         setSwitchingModel(true);
         try {
+            // 在切换avatar前，先断开当前的WebRTC连接
+            if (wasConnected) {
+                console.log('Disconnecting current WebRTC connection before switching avatar...');
+                videoAvatarRef.current.stopConnection();
+                // 给一点时间让连接完全断开
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
             const result = await adminService.startAvatar(modelId);
             if (result.success) {
                 setSelectedModel(modelId);
                 console.log(`Successfully switched to avatar: ${modelId}`);
+                
+                // 如果之前已连接，等待3秒后自动重新连接
+                if (wasConnected) {
+                    console.log('Avatar switched successfully. Waiting 3 seconds before auto-reconnecting...');
+                    setTimeout(() => {
+                        if (videoAvatarRef.current) {
+                            console.log('Auto-reconnecting to new avatar...');
+                            videoAvatarRef.current.startConnection();
+                        }
+                    }, 3000);
+                }
             } else {
                 console.error('Failed to switch avatar:', result.message);
-                alert(`Failed to switch avatar: ${result.message}`);
+                alert(`切换Avatar失败: ${result.message}`);
             }
         } catch (error) {
             console.error('Error switching avatar:', error);
-            alert(`Error switching avatar: ${error.message}`);
+            alert(`切换Avatar出错: ${error.message}`);
         } finally {
             setSwitchingModel(false);
         }
@@ -382,7 +455,7 @@ function HomeChatList({ themeStyles }) {
                 minHeight: 0,
                 minWidth: 0
             }}>
-                <VideoAvatar />
+                <VideoAvatar ref={videoAvatarRef} switchingAvatar={switchingModel} />
             </div>
         </div>
     );

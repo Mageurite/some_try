@@ -1,0 +1,83 @@
+version: '3.8'
+
+# 虚拟导师系统 - 轻量级Docker配置
+# 只包含轻量级服务，重量级服务（Lip-sync, LLM）需要在主机上运行
+
+services:
+  # 1. Backend API服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vt-backend
+    ports:
+      - "8203:8203"
+    environment:
+      - FLASK_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    volumes:
+      - ./backend/instance:/app/instance
+      - ./backend/uploads:/app/uploads
+    network_mode: bridge
+    restart: unless-stopped
+
+  # 2. Redis缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: vt-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  # 3. TTS服务 (Edge TTS - CPU only, 轻量级)
+  tts:
+    build:
+      context: ./tts/edge
+      dockerfile: Dockerfile
+    container_name: vt-tts
+    ports:
+      - "8604:8604"
+    restart: unless-stopped
+
+  # 4. Frontend React应用
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vt-frontend
+    ports:
+      - "3002:3002"
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8203/api
+      - REACT_APP_WEBRTC_URL=http://localhost:8615
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+
+# 注意事项：
+# 以下服务需要在主机上手动启动：
+# 
+# 1. RAG服务 (端口 8602):
+#    cd rag && conda activate rag && python app.py
+#
+# 2. LLM服务 (端口 8610):
+#    cd llm && conda activate llm && python api_interface.py
+#
+# 3. Lip-sync服务 (端口 8615, 需要GPU):
+#    cd lip-sync && conda activate avatar && python app.py ...
+#
+# 这样可以避免GPU和大型模型的Docker化问题
+
+
+
+
+
+
