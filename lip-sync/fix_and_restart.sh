@@ -45,10 +45,10 @@ echo
 # 步骤4: 通过API重新启动
 echo "【步骤4】通过live_server API重新启动avatar..."
 echo "发送请求到: http://localhost:8606/switch_avatar"
-echo "参数: avatar_id=yongen, ref_file=ref_audio/silence.wav"
+echo "参数: avatar_id=yongen, ref_file=ref_audio/complete_silence.wav"
 echo
 
-RESPONSE=$(curl -s -X POST "http://localhost:8606/switch_avatar?avatar_id=yongen&ref_file=ref_audio/silence.wav")
+RESPONSE=$(curl -s -X POST "http://localhost:8606/switch_avatar?avatar_id=yongen&ref_file=ref_audio/complete_silence.wav")
 echo "API响应:"
 echo "$RESPONSE"
 echo

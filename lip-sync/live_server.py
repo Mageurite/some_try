@@ -486,7 +486,7 @@ def avatar_delete(name: str = Form(...)):
     return delete_avatar(avatar_name=name)
 
 @app.post("/avatar/start")
-def avatar_start(avatar_name: str = Form(...), ref_file: str = Form("ref_audio/silence.wav")):
+def avatar_start(avatar_name: str = Form(...), ref_file: str = Form("ref_audio/complete_silence.wav")):
     """Avatar start endpoint - alias for switch_avatar"""
     return switch_avatar(avatar_id=avatar_name, ref_file=ref_file)
 

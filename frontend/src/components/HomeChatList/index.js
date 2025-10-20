@@ -27,10 +27,41 @@ const VideoAvatar = React.forwardRef(({ style, switchingAvatar }, ref) => {
     const [connected, setConnected] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // 啟動 WebRTC 連接
-    const startConnection = async () => {
+    // 检查 WebRTC 服务是否就绪
+    const checkWebRTCHealth = async () => {
+        const webrtcUrl = getWebRTCUrl();
+        try {
+            const response = await fetch(`${webrtcUrl}/health`, {
+                method: 'GET',
+                timeout: 5000
+            });
+            return response.ok;
+        } catch (error) {
+            console.log('WebRTC health check failed:', error);
+            return false;
+        }
+    };
+
+    // 啟動 WebRTC 連接（带重试机制）
+    const startConnection = async (retryCount = 0, maxRetries = 3) => {
+        const retryDelay = 2000; // 重试间隔2秒
+        
         setLoading(true);
         try {
+            // 在尝试连接前，先检查服务是否就绪
+            console.log(`尝试连接 WebRTC (尝试 ${retryCount + 1}/${maxRetries + 1})...`);
+            
+            // 先进行健康检查（仅在重试时）
+            if (retryCount > 0) {
+                console.log('正在检查 WebRTC 服务健康状态...');
+                const isHealthy = await checkWebRTCHealth();
+                if (!isHealthy && retryCount < maxRetries) {
+                    console.log(`服务尚未就绪，${retryDelay/1000}秒后重试...`);
+                    setTimeout(() => startConnection(retryCount + 1, maxRetries), retryDelay);
+                    return;
+                }
+            }
+            
             let pc;
             let stopped = false;
             const config = {
@@ -105,10 +136,24 @@ const VideoAvatar = React.forwardRef(({ style, switchingAvatar }, ref) => {
             if (!stopped) {
                 await pc.setRemoteDescription(answer);
                 setConnected(true);
+                console.log('✅ WebRTC 连接成功！');
             }
         } catch (error) {
-            console.error('WebRTC connection failed:', error);
-            alert(`视频连接失败: ${error.message}\n\n请先选择一个Avatar并等待切换完成后再尝试连接视频。`);
+            console.error(`WebRTC connection failed (尝试 ${retryCount + 1}/${maxRetries + 1}):`, error);
+            
+            // 如果还有重试次数，自动重试
+            if (retryCount < maxRetries) {
+                console.log(`${retryDelay/1000}秒后自动重试...`);
+                setTimeout(() => startConnection(retryCount + 1, maxRetries), retryDelay);
+                return;
+            }
+            
+            // 所有重试都失败后，显示错误信息
+            const errorMsg = error.message.includes('Failed to fetch') 
+                ? '无法连接到视频服务。\n\n可能原因：\n1. Avatar 服务正在启动中，请稍后再试\n2. 网络连接问题\n3. 如果使用 SSH 端口转发，可能需要重新建立连接\n\n建议：等待10-15秒后再次点击连接按钮'
+                : `视频连接失败: ${error.message}\n\n请先选择一个 Avatar 并等待切换完成后再尝试连接视频。`;
+                
+            alert(errorMsg);
             if (pcRef.current) {
                 pcRef.current.close();
                 pcRef.current = null;
@@ -193,8 +238,10 @@ const VideoAvatar = React.forwardRef(({ style, switchingAvatar }, ref) => {
                         marginBottom: 16
                     }}></div>
                     <div>正在切换Avatar...</div>
-                    <div style={{ fontSize: 12, color: '#ffffffaa', marginTop: 8 }}>
-                        请稍候，将自动重新连接
+                    <div style={{ fontSize: 12, color: '#ffffffaa', marginTop: 8, textAlign: 'center', lineHeight: '1.6' }}>
+                        正在停止旧服务并启动新服务<br/>
+                        预计需要5-10秒，请稍候<br/>
+                        完成后将自动重新连接视频
                     </div>
                 </div>
             )}
@@ -322,15 +369,16 @@ function HomeChatList({ themeStyles }) {
                 setSelectedModel(modelId);
                 console.log(`Successfully switched to avatar: ${modelId}`);
                 
-                // 如果之前已连接，等待3秒后自动重新连接
+                // 如果之前已连接，等待更长时间后自动重新连接
+                // 增加等待时间以确保新的 WebRTC 服务完全启动
                 if (wasConnected) {
-                    console.log('Avatar switched successfully. Waiting 3 seconds before auto-reconnecting...');
+                    console.log('Avatar switched successfully. Waiting 5 seconds before auto-reconnecting...');
                     setTimeout(() => {
                         if (videoAvatarRef.current) {
                             console.log('Auto-reconnecting to new avatar...');
                             videoAvatarRef.current.startConnection();
                         }
-                    }, 3000);
+                    }, 5000); // 从3秒增加到5秒
                 }
             } else {
                 console.error('Failed to switch avatar:', result.message);

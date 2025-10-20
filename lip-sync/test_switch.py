@@ -17,7 +17,7 @@ def switch_avatar(avatar_id, server_url="http://0.0.0.0:8606"):
     # 参数
     params = {
         "avatar_id": avatar_id,
-        "ref_file": "ref_audio/silence.wav"  # 默认参考音频
+        "ref_file": "ref_audio/complete_silence.wav"  # 默认参考音频（完全静音）
     }
     
     print(f"\n{'='*60}")

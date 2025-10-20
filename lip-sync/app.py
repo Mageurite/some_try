@@ -274,6 +274,31 @@ async def is_speaking(request):
         ),
     )
 
+async def health_check(request):
+    """健康检查端点 - 用于检测 WebRTC 服务是否就绪"""
+    try:
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {
+                    "status": "healthy",
+                    "service": "webrtc",
+                    "sessions": len(nerfreals),
+                    "max_sessions": opt.max_session if opt else 1
+                }
+            ),
+            status=200
+        )
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"status": "error", "error": str(e)}
+            ),
+            status=500
+        )
+
 
 async def on_shutdown(app):
     # close peer connections
@@ -401,6 +426,7 @@ if __name__ == '__main__':
     appasync.router.add_post("/record", record)
     appasync.router.add_post("/interrupt_talk", interrupt_talk)
     appasync.router.add_post("/is_speaking", is_speaking)
+    appasync.router.add_get("/health", health_check)  # 添加健康检查端点
     appasync.router.add_static('/',path='web')
 
     # Configure default CORS settings.
