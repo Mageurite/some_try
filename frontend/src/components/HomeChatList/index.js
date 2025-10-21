@@ -21,7 +21,7 @@ const defaultAiModels = [
 ];
 
 // WebRTC Video Avatar Component (Square, with connection button in bottom right)
-const VideoAvatar = React.forwardRef(({ style, switchingAvatar }, ref) => {
+const VideoAvatar = React.forwardRef(({ style, switchingAvatar, initialLoading }, ref) => {
     const videoRef = useRef(null);
     const pcRef = useRef(null);
     const [connected, setConnected] = useState(false);
@@ -150,8 +150,8 @@ const VideoAvatar = React.forwardRef(({ style, switchingAvatar }, ref) => {
             
             // 所有重试都失败后，显示错误信息
             const errorMsg = error.message.includes('Failed to fetch') 
-                ? '无法连接到视频服务。\n\n可能原因：\n1. Avatar 服务正在启动中，请稍后再试\n2. 网络连接问题\n3. 如果使用 SSH 端口转发，可能需要重新建立连接\n\n建议：等待10-15秒后再次点击连接按钮'
-                : `视频连接失败: ${error.message}\n\n请先选择一个 Avatar 并等待切换完成后再尝试连接视频。`;
+                ? 'Unable to connect to video service.\n\nPossible causes:\n1. Avatar service is still starting up, please try again later\n2. Network connection issue\n3. If using SSH port forwarding, you may need to re-establish the connection\n\nSuggestion: Wait 10-15 seconds and click the connect button again'
+                : `Video connection failed: ${error.message}\n\nPlease select an Avatar and wait for it to finish loading before attempting to connect.`;
                 
             alert(errorMsg);
             if (pcRef.current) {
@@ -210,8 +210,8 @@ const VideoAvatar = React.forwardRef(({ style, switchingAvatar }, ref) => {
                 style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 0 }}
             />
             
-            {/* Avatar切换中的遮罩层 */}
-            {switchingAvatar && (
+            {/* Avatar switching/loading overlay */}
+            {(switchingAvatar || initialLoading) && (
                 <div style={{
                     position: 'absolute',
                     top: 0,
@@ -226,7 +226,7 @@ const VideoAvatar = React.forwardRef(({ style, switchingAvatar }, ref) => {
                     color: '#fff',
                     fontSize: 16,
                     fontWeight: 500,
-                    zIndex: 20
+                    zIndex: 5
                 }}>
                     <div style={{
                         width: 40,
@@ -237,11 +237,21 @@ const VideoAvatar = React.forwardRef(({ style, switchingAvatar }, ref) => {
                         animation: 'spin 1s linear infinite',
                         marginBottom: 16
                     }}></div>
-                    <div>正在切换Avatar...</div>
+                    <div>{initialLoading ? 'Initializing Avatar...' : 'Switching Avatar...'}</div>
                     <div style={{ fontSize: 12, color: '#ffffffaa', marginTop: 8, textAlign: 'center', lineHeight: '1.6' }}>
-                        正在停止旧服务并启动新服务<br/>
-                        预计需要5-10秒，请稍候<br/>
-                        完成后将自动重新连接视频
+                        {initialLoading ? (
+                            <>
+                                Loading default avatar service<br/>
+                                This may take 5-10 seconds, please wait<br/>
+                                You can switch to another avatar anytime
+                            </>
+                        ) : (
+                            <>
+                                Stopping old service and starting new service<br/>
+                                This may take 5-10 seconds, please wait<br/>
+                                Video will automatically reconnect when complete
+                            </>
+                        )}
                     </div>
                 </div>
             )}
@@ -284,6 +294,7 @@ function HomeChatList({ themeStyles }) {
     const [availableAvatars, setAvailableAvatars] = useState([]);
     const [loadingAvatars, setLoadingAvatars] = useState(false);
     const [switchingModel, setSwitchingModel] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true); // 初始加载状态
     const videoAvatarRef = useRef(null);
 
     // 获取可用Avatar列表
@@ -325,7 +336,12 @@ function HomeChatList({ themeStyles }) {
                         }
                     }).catch(error => {
                         console.error(`Error auto-starting avatar:`, error);
+                    }).finally(() => {
+                        // 无论成功或失败，都结束初始加载状态
+                        setInitialLoading(false);
                     });
+                } else {
+                    setInitialLoading(false);
                 }
             } else {
                 console.warn('Failed to fetch available avatars:', result.message);
@@ -334,6 +350,7 @@ function HomeChatList({ themeStyles }) {
                 if (!selectedModel) {
                     setSelectedModel(defaultAiModels[0].id);
                 }
+                setInitialLoading(false);
             }
         } catch (error) {
             console.error('Error fetching available avatars:', error);
@@ -342,6 +359,7 @@ function HomeChatList({ themeStyles }) {
             if (!selectedModel) {
                 setSelectedModel(defaultAiModels[0].id);
             }
+            setInitialLoading(false);
         } finally {
             setLoadingAvatars(false);
         }
@@ -350,6 +368,11 @@ function HomeChatList({ themeStyles }) {
     // 切换Avatar模型
     const handleModelSwitch = async (modelId) => {
         if (modelId === selectedModel) return;
+
+        // 如果正在初始加载，取消初始加载状态（用户主动切换）
+        if (initialLoading) {
+            setInitialLoading(false);
+        }
 
         // 记录是否之前已连接
         const wasConnected = videoAvatarRef.current && videoAvatarRef.current.isConnected();
@@ -382,11 +405,11 @@ function HomeChatList({ themeStyles }) {
                 }
             } else {
                 console.error('Failed to switch avatar:', result.message);
-                alert(`切换Avatar失败: ${result.message}`);
+                alert(`Failed to switch avatar: ${result.message}`);
             }
         } catch (error) {
             console.error('Error switching avatar:', error);
-            alert(`切换Avatar出错: ${error.message}`);
+            alert(`Error switching avatar: ${error.message}`);
         } finally {
             setSwitchingModel(false);
         }
@@ -410,12 +433,12 @@ function HomeChatList({ themeStyles }) {
             transition: 'all 0.3s ease'
         }}>
             {/* 左上角 AI 模型選擇 */}
-            <div style={{ position: 'absolute', top: 16, left: 16, zIndex: 10 }}>
+            <div style={{ position: 'absolute', top: 16, left: 16, zIndex: 50 }}>
                 <div style={{ position: 'relative' }}>
                     <select
                         value={selectedModel}
                         onChange={(e) => handleModelSwitch(e.target.value)}
-                        disabled={loadingAvatars || switchingModel}
+                        disabled={loadingAvatars}
                         style={{
                             padding: '8px 12px',
                             borderRadius: 8,
@@ -424,7 +447,7 @@ function HomeChatList({ themeStyles }) {
                             fontSize: 14,
                             fontWeight: 500,
                             color: themeStyles?.inputColor || '#333',
-                            cursor: loadingAvatars || switchingModel ? 'not-allowed' : 'pointer',
+                            cursor: loadingAvatars ? 'not-allowed' : 'pointer',
                             minWidth: 140,
                             boxShadow: themeStyles?.shadow || '0 2px 8px rgba(0,0,0,0.1)',
                             appearance: 'none',
@@ -434,7 +457,7 @@ function HomeChatList({ themeStyles }) {
                             backgroundSize: '16px',
                             paddingRight: '32px',
                             transition: 'all 0.3s ease',
-                            opacity: loadingAvatars || switchingModel ? 0.6 : 1
+                            opacity: loadingAvatars ? 0.6 : 1
                         }}
                     >
                         {loadingAvatars ? (
@@ -503,7 +526,7 @@ function HomeChatList({ themeStyles }) {
                 minHeight: 0,
                 minWidth: 0
             }}>
-                <VideoAvatar ref={videoAvatarRef} switchingAvatar={switchingModel} />
+                <VideoAvatar ref={videoAvatarRef} switchingAvatar={switchingModel} initialLoading={initialLoading} />
             </div>
         </div>
     );
