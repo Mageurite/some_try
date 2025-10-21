@@ -143,18 +143,48 @@ def add_avatar():
 @avatar_bp.route("/tts/models", methods=["GET"])
 @jwt_required()
 def get_tts_models():
-    """Fetch available TTS models from the avatar service."""
+    """Fetch available TTS models from the model_info.json file."""
     current_user_email = get_jwt_identity()
     try:
-        response = requests.get("http://localhost:8604/tts/models", timeout=10)
+        # 直接从model_info.json文件读取TTS模型列表
+        import os
+        import json
+        
+        # 获取model_info.json文件路径
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        model_info_file = os.path.join(project_root, "tts", "model_info.json")
+        
+        if not os.path.exists(model_info_file):
+            return jsonify(msg="Model information file not found"), 404
+        
+        # 读取模型信息
+        with open(model_info_file, 'r', encoding='utf-8') as f:
+            contents = json.load(f)
+        
+        # 构造返回数据格式
+        model_info = {}
+        for model_name, info in contents.items():
+            clone = info.get("clone", False)
+            if clone:
+                timbres = None
+                cur_timbre = None
+            else:
+                timbres = info.get("timbres", [])
+                cur_timbre = info.get("cur_timbre", None)
+            
+            model_info[model_name] = {
+                "full_name": info.get("full_name", ""),
+                "clone": clone,
+                "status": info.get("status", "unknown"),
+                "license": info.get("license", "unknown"),
+                "timbres": timbres,
+                "cur_timbre": cur_timbre
+            }
+        
+        return jsonify(model_info), 200
 
-        if response.status_code == 200:
-            return jsonify(response.json()), 200
-        else:
-            return jsonify(msg="Failed to fetch TTS models", detail=response.text), response.status_code
-
-    except requests.RequestException as e:
-        return jsonify(msg="Error connecting to TTS service", error=str(e)), 500
+    except Exception as e:
+        return jsonify(msg="Error reading TTS models", error=str(e)), 500
 
 
 @avatar_bp.route("avatar/delete", methods=["POST"])
