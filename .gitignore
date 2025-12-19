@@ -4,11 +4,6 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Virtual environments
-.env/
-venv/
-env/
-.venv/
 
 # Jupyter notebook checkpoints
 .ipynb_checkpoints/
@@ -17,9 +12,6 @@ env/
 *.log
 *.tmp
 
-# OS files
-.DS_Store
-Thumbs.db
 
 # IDE settings
 .vscode/
@@ -35,19 +27,16 @@ build/
 *.swp
 
 # Avatar model files and data
-lip-sync/data/avatars/*/
-lip-sync/models/
+
 lip-sync/ref_audio/
 lip-sync/*.txt
 lip-sync/*.log
 
 # Backend generated avatars
-backend/static/avatars/*
 !backend/static/avatars/.gitkeep
 
 # TTS files
-tts/tts.wav
-tts.wav
+
 
 # LLM checkpoints
 llm/checkpoints.db
