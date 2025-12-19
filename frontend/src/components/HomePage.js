@@ -5,6 +5,7 @@ import HomeChatList from './HomeChatList';
 import HomeChatWindow from './HomeChatWindow';
 import HomeFooter from './HomeFooter';
 import chatService from '../services/chatService';
+import config from '../config';
 
 // Chat mock data
 const initialChatMessages = {
@@ -160,7 +161,7 @@ function HomePage(props) {
                 type: fileData.fileInfo.type,
                 // 根据实际后端响应构建下载URL
                 url: fileData.file.file_path ?
-                    `http://localhost:8203/api/download/${fileData.file.file_id}` :
+                    `${config.BACKEND_API_URL}/download/${fileData.file.file_id}` :
                     '#', // 临时占位符
                 file_id: fileData.file.file_id,
                 file_path: fileData.file.file_path,

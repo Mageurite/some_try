@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import adminService from '../../services/adminService';
+import config from '../../config';
 
-// 直接使用动态URL，不依赖config文件
+// 使用配置中的 URL
 const getWebRTCUrl = () => {
-    const hostname = window.location.hostname;
-    return `http://${hostname}:8615`;
+    return config.WEBRTC_URL;
 };
 
 const getBackendUrl = () => {
-    const hostname = window.location.hostname;
-    return `http://${hostname}:8203`;
+    return config.BACKEND_URL;
 };
 
 // 默认AI模型选项（作为备用）

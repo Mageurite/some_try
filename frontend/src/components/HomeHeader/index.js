@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import config from '../../config';
 
-const BASE_URL = 'http://localhost:8203/';
+const BASE_URL = `${config.BACKEND_URL}/`;
 const DEFAULT_AVATAR = 'https://cdn.jsdelivr.net/gh/edent/SuperTinyIcons/images/svg/user.svg'; // Replace with a local default avatar if desired
 
 function HomeHeader({ onLogout }) {

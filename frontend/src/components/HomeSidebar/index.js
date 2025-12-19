@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import userService from '../../services/userService';
 import chatService from '../../services/chatService';
 import authService from '../../services/authService';
+import config from '../../config';
 
-const BASE_URL = 'http://localhost:8203/';
+const BASE_URL = `${config.BACKEND_URL}/`;
 
 // Mock SVG/emoji icons
 const BookIcon = () => <span role="img" aria-label="book" style={{ fontSize: 24 }}>📖</span>;

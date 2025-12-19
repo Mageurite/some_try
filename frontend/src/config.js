@@ -1,21 +1,20 @@
 // API Configuration
-// 简单直接的配置，在运行时获取hostname
+// 使用环境变量配置，支持通过 .env 文件自定义
 const config = {
     get BACKEND_URL() {
-        const host = (typeof window !== 'undefined' && window.location) ? window.location.hostname : 'localhost';
-        return `http://${host}:8203`;
+        return process.env.REACT_APP_BACKEND_URL || 'http://localhost:8203';
+    },
+    get BACKEND_API_URL() {
+        return `${this.BACKEND_URL}/api`;
     },
     get LIPSYNC_MANAGER_URL() {
-        const host = (typeof window !== 'undefined' && window.location) ? window.location.hostname : 'localhost';
-        return `http://${host}:8606`;
+        return process.env.REACT_APP_LIPSYNC_MANAGER_URL || 'http://localhost:8606';
     },
     get WEBRTC_URL() {
-        const host = (typeof window !== 'undefined' && window.location) ? window.location.hostname : 'localhost';
-        return `http://${host}:8615`;
+        return process.env.REACT_APP_WEBRTC_URL || 'http://localhost:8615';
     },
     get TTS_URL() {
-        const host = (typeof window !== 'undefined' && window.location) ? window.location.hostname : 'localhost';
-        return `http://${host}:8604`;
+        return process.env.REACT_APP_TTS_URL || 'http://localhost:8604';
     }
 };
 

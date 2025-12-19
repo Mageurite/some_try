@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import uploadService from '../../services/uploadService';
 import adminService from '../../services/adminService';
+import config from '../../config';
 
 // 允许的文档类型 - 与后端保持一致
 const ALLOWED_DOCUMENT_TYPES = [
@@ -218,7 +219,7 @@ function HomeFooter({ onSendMessage, onSendFile, onNewChat, themeStyles }) {
 
             console.log('🔑 使用的 Token:', token.substring(0, 50) + '...');
 
-            const response = await fetch('http://localhost:8203/api/upload', {
+            const response = await fetch(`${config.BACKEND_API_URL}/upload`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

@@ -4,6 +4,7 @@ import { Edit, Delete } from '@mui/icons-material';
 import adminService from '../../services/adminService';
 import { FILE_TYPES, validateFile } from '../../utils/fileTypes';
 import LoadingSpinner from '../LoadingSpinner';
+import config from '../../config';
 
 // 添加CSS动画样式
 const spinAnimation = `
@@ -296,7 +297,7 @@ function CreateEditModal({ open, onClose, onSave, columns, initialData, isEdit, 
                 throw new Error('No authentication token found');
             }
 
-            const response = await fetch('http://localhost:8203/api/upload', {
+            const response = await fetch(`${config.BACKEND_API_URL}/upload`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -1044,7 +1045,7 @@ function CreateEditModal({ open, onClose, onSave, columns, initialData, isEdit, 
     );
 }
 
-const BASE_URL = 'http://localhost:8203/';
+const BASE_URL = `${config.BACKEND_URL}/`;
 const DEFAULT_AVATAR = 'https://cdn.jsdelivr.net/gh/edent/SuperTinyIcons/images/svg/user.svg';
 
 function UserTable({ themeStyles, selectedMenu, onLogout }) {
