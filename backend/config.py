@@ -63,3 +63,18 @@ class Config:
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
     # 既兼容只给地址，也兼容 "Name <addr>" 形式
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", "")
+
+    # ===== Service URLs =====
+    # Avatar Service (Lip-Sync)
+    AVATAR_SERVICE_URL = os.getenv("AVATAR_SERVICE_URL", "http://localhost:8606")
+    # WebRTC Service
+    WEBRTC_SERVICE_URL = os.getenv("WEBRTC_SERVICE_URL", "http://localhost:8615")
+    # LLM Service
+    LLM_SERVICE_URL = os.getenv("LLM_SERVICE_URL", "http://localhost:8610")
+    # RAG Service
+    RAG_SERVICE_URL = os.getenv("RAG_SERVICE_URL", "http://localhost:9090")
+    # TTS Service
+    TTS_SERVICE_URL = os.getenv("TTS_SERVICE_URL", "http://localhost:8604")
+    # Redis
+    REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))

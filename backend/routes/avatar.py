@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, Response
+from flask import Blueprint, request, jsonify, Response, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import requests
 from models.user import User
@@ -10,7 +10,8 @@ avatar_bp = Blueprint("avatar", __name__)
 @avatar_bp.route("/webrtc/<path:path>", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 def webrtc_proxy(path):
     """Proxy WebRTC requests to port 8615 (bypass port mapping issue)"""
-    webrtc_url = f"http://localhost:8615/{path}"
+    webrtc_base_url = current_app.config.get("WEBRTC_SERVICE_URL", "http://localhost:8615")
+    webrtc_url = f"{webrtc_base_url}/{path}"
     
     try:
         # Prepare headers
@@ -38,7 +39,8 @@ def fetch_avatars():
     user = User.query.filter_by(email=current_user_email).first()
 
     try:
-        response = requests.get("http://localhost:8606/avatar/get_avatars", timeout=10)
+        avatar_service_url = current_app.config.get("AVATAR_SERVICE_URL", "http://localhost:8606")
+        response = requests.get(f"{avatar_service_url}/avatar/get_avatars", timeout=10)
         data = response.json()
         # 前端期望对象格式：{avatar_name: {clone: bool, description: str, ...}}
         if data.get('status') == 'success' and 'avatars' in data:
@@ -72,8 +74,9 @@ def forward_avatar_preview():
         return jsonify(msg="Missing avatar_name in form-data"), 400
 
     try:
+        avatar_service_url = current_app.config.get("AVATAR_SERVICE_URL", "http://localhost:8606")
         response = requests.post(
-            "http://localhost:8606/avatar/preview",
+            f"{avatar_service_url}/avatar/preview",
             data={"avatar_name": avatar_name},
             timeout=10
         )
@@ -119,8 +122,9 @@ def add_avatar():
         files["prompt_voice"] = (prompt_voice.filename, prompt_voice.stream, prompt_voice.mimetype)
 
     try:
+        avatar_service_url = current_app.config.get("AVATAR_SERVICE_URL", "http://localhost:8606")
         response = requests.post(
-            "http://localhost:8606/avatar/add",
+            f"{avatar_service_url}/avatar/add",
             data=data,
             files=files,
             timeout=200
@@ -198,8 +202,9 @@ def forward_delete_avatar():
         return jsonify(msg="Missing 'name' in form-data"), 400
 
     try:
+        avatar_service_url = current_app.config.get("AVATAR_SERVICE_URL", "http://localhost:8606")
         response = requests.post(
-            "http://localhost:8606/avatar/delete",
+            f"{avatar_service_url}/avatar/delete",
             data={"name": avatar_name},
             timeout=10
         )
@@ -229,8 +234,9 @@ def forward_start_avatar():
         return jsonify(msg="Missing 'avatar_name' in form-data"), 400
 
     try:
+        avatar_service_url = current_app.config.get("AVATAR_SERVICE_URL", "http://localhost:8606")
         response = requests.post(
-            "http://localhost:8606/avatar/start",
+            f"{avatar_service_url}/avatar/start",
             data={"avatar_name": avatar_name},
             timeout=60
         )

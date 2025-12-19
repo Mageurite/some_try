@@ -80,8 +80,9 @@ def chat():
 
         # Stream LLM response
         try:
+            llm_service_url = current_app.config.get("LLM_SERVICE_URL", "http://localhost:8610")
             with requests.post(
-                url="http://localhost:8610/chat/stream",
+                url=f"{llm_service_url}/chat/stream",
                 json={"input": text, "session_id": session.id, "user_id": user.id},
                 stream=True,
                 timeout=60,
@@ -105,7 +106,8 @@ def chat():
                                     "type": "echo",
                                 }
                                 try:
-                                    requests.post("http://localhost:8615/human", json=forward_payload, timeout=10)
+                                    webrtc_service_url = current_app.config.get("WEBRTC_SERVICE_URL", "http://localhost:8615")
+                                    requests.post(f"{webrtc_service_url}/human", json=forward_payload, timeout=10)
                                 except Exception as e:
                                     print(f"[WARN] Final forward failed: {e}")
                                 output_segments.append(buffer)
@@ -119,7 +121,8 @@ def chat():
                                 "type": "echo",
                             }
                             try:
-                                requests.post("http://localhost:8615/human", json=forward_payload, timeout=10)
+                                webrtc_service_url = current_app.config.get("WEBRTC_SERVICE_URL", "http://localhost:8615")
+                                requests.post(f"{webrtc_service_url}/human", json=forward_payload, timeout=10)
                             except Exception as e:
                                 print(f"[WARN] Forward to video model failed: {e}")
                             output_segments.append(buffer)
@@ -283,8 +286,9 @@ def forward_activate_model():
         return jsonify(msg="Missing 'model' in JSON payload"), 400
 
     try:
+        llm_service_url = current_app.config.get("LLM_SERVICE_URL", "http://localhost:8610")
         response = requests.post(
-            "http://localhost:8610/activate_model",
+            f"{llm_service_url}/activate_model",
             json=data,
             timeout=15
         )

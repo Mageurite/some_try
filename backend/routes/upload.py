@@ -38,10 +38,11 @@ def dispatch_upload():
         return jsonify(msg="User not found."), 404
 
     # Forward to different endpoints based on role
+    rag_service_url = current_app.config.get("RAG_SERVICE_URL", "http://localhost:9090")
     if user.role == "student":
-        forward_url = "http://localhost:9090/user/upload"
+        forward_url = f"{rag_service_url}/user/upload"
     elif user.role == "tutor":
-        forward_url = "http://localhost:9090/admin/upload"
+        forward_url = f"{rag_service_url}/admin/upload"
     else:
         return jsonify(msg="Invalid role"), 403
 
@@ -70,11 +71,12 @@ def delete_file(file_name):
         return jsonify(msg="User not found"), 404
 
     user_id = str(user.id)
+    rag_service_url = current_app.config.get("RAG_SERVICE_URL", "http://localhost:9090")
     if user.role == "student":
-        forward_url = "http://localhost:9090/user/delete"
+        forward_url = f"{rag_service_url}/user/delete"
         form_data = {"user_id": user_id, "source_name": file_name}
     elif user.role == "tutor":
-        forward_url = "http://localhost:9090/admin/delete"
+        forward_url = f"{rag_service_url}/admin/delete"
         form_data = {"source_name": file_name}
     else:
         return jsonify(msg="Invalid role"), 403
@@ -96,7 +98,8 @@ def fetch_all_users():
         return jsonify(msg="Permission denied: Only tutors can access user list."), 403
 
     try:
-        response = requests.get("http://localhost:9090/api/users", timeout=10)
+        rag_service_url = current_app.config.get("RAG_SERVICE_URL", "http://localhost:9090")
+        response = requests.get(f"{rag_service_url}/api/users", timeout=10)
         return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
         return jsonify(msg="Failed to fetch users", error=str(e)), 500
@@ -112,8 +115,9 @@ def fetch_user_files():
         return jsonify(msg="User not found"), 404
 
     try:
+        rag_service_url = current_app.config.get("RAG_SERVICE_URL", "http://localhost:9090")
         response = requests.get(
-            "http://localhost:9090/api/user_files",
+            f"{rag_service_url}/api/user_files",
             params={"user_id": user.id},
             timeout=10
         )
@@ -132,7 +136,8 @@ def fetch_public_files():
         return jsonify(msg="Permission denied: Only tutors can access public files."), 403
 
     try:
-        response = requests.get("http://localhost:9090/api/public_files", timeout=10)
+        rag_service_url = current_app.config.get("RAG_SERVICE_URL", "http://localhost:9090")
+        response = requests.get(f"{rag_service_url}/api/public_files", timeout=10)
         return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
         return jsonify(msg="Failed to fetch public files", error=str(e)), 500
